@@ -27,15 +27,18 @@ class MainWindow:
         figure = Figure()
         self._canvas = FigureCanvasQTAgg(figure)
         self._axes = figure.add_subplot(111)
-        self._axes.autoscale()
-        
+                
         self._grid.addWidget(self._canvas, 1, 0)
 
         self._distance_readings = []
 
     def _get_distance(self):
         response = self._comms.call_function(0, bytes())
-        distance = struct.unpack("<L", response)
+        if not response:
+            self._distance_readings.append((time.time(), None))
+            self._distance_text.setText(f"-")
+            return
+        distance = struct.unpack("<L", response)[0]
         self._distance_readings.append((time.time(), distance))
         self._distance_readings = self._distance_readings[-100:]
         self._distance_text.setText(f"{distance}")
@@ -46,6 +49,7 @@ class MainWindow:
 
         self._axes.plot([x[0] for x in self._distance_readings], 
                            [x[1] for x in self._distance_readings])
+        self._axes.set_ybound(0, 300000)
         self._canvas.draw()
 
         

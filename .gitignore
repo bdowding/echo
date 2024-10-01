@@ -1,0 +1,4 @@
+/python/.venv
+/python/__pycache__
+/stm32/echo/Debug
+/stm32/.metadata
