@@ -1,10 +1,8 @@
 
 import struct
-import threading
-import time
 import serial
 
-class Comms:
+class SerialComms:
     def __init__(self, com_port: str) -> None:
         self._com_port = com_port
         

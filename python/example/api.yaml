@@ -1,0 +1,32 @@
+enums:
+  - name: PowerState
+    entries:
+    - name: PoweredOff
+      value: 0
+    - name: PoweredOn
+      value: 1
+structs:
+    - name: EchoSensorStatus
+      fields:
+        - name: state
+          type: PowerState
+        - name: distance
+          comment: Distance in mm
+          type: float
+devices:
+  - name: EchoSensor
+    rpcs:
+    - name: isPowerEnabled
+      params: []
+      return_type: bool
+      const: true
+    - name: setPowerEnabled
+      params:
+        - name: power
+          type: bool
+      return_type: void
+      const: false
+    - name: getStatus
+      params: []
+      return_type: EchoSensorStatus
+      const: true
