@@ -2,3 +2,6 @@
 /python/__pycache__
 /stm32/echo/Debug
 /stm32/.metadata
+/python/rpclite.egg-info
+/python/rpclite/__pycache__
+/python/test/output

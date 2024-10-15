@@ -1,14 +1,14 @@
-from __future__ import annotations
+
 import abc
-import argparse
-import functools
 import itertools
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Type
+
 import yaml
 
 
 class NoMatchException(Exception):
     pass
+
 
 class MultipleMatchException(Exception):
     pass
@@ -17,6 +17,17 @@ class MultipleMatchException(Exception):
 class ApiType(abc.ABC):
     @abc.abstractmethod
     def get_name(self) -> str: ...
+
+
+class ApiPrimitive(ApiType):
+    def __init__(self, python_type: Type) -> None:
+        self._python_type =  python_type
+     
+    def get_name(self) -> str:
+        if self._python_type is type(None):
+            return "None"
+        else:
+            return self._python_type.__name__
 
 
 _builtin_types: Dict[str, type] = {
@@ -34,6 +45,17 @@ _builtin_types: Dict[str, type] = {
     "void": type(None),
 }
 
+def _get_api_type(type_name: str, others: Sequence[ApiType]):
+    if type_name in _builtin_types:
+        return ApiPrimitive(_builtin_types[type_name])
+        
+    others_matches = [x for x in others if x.get_name() == type_name]
+    if not others_matches:
+        raise NoMatchException(type_name)
+    elif len(others_matches) > 1:
+        raise MultipleMatchException(type_name)
+    else:
+        return others_matches[0]
 
 class ApiEnumEntry:
     def __init__(self, contents: Dict) -> None:
@@ -49,6 +71,7 @@ class ApiEnum(ApiType):
     def get_name(self) -> str:
         return self.name
 
+
 class ApiStructField:
     def __init__(self, name: str, api_type: ApiType) -> None:
         self.name: str = name
@@ -62,26 +85,17 @@ class ApiStruct(ApiType):
 
         for unresolved in contents["fields"]:
             target_type_name: str = unresolved["type"]
-            if target_type_name in _builtin_types:
-                self.type = _builtin_types[target_type_name]
-                continue
+            self.fields.append(ApiStructField(unresolved["name"], _get_api_type(target_type_name, others)))
 
-            others_matches = [x for x in others if x.get_name() == target_type_name]
-            if not others_matches:
-                raise NoMatchException(target_type_name)
-            elif len(others_matches) > 1:
-                raise MultipleMatchException(target_type_name)
-            else:
-                self.fields.append(ApiStructField(unresolved["name"], others_matches[0]))
-            
     def get_name(self) -> str:
         return self.name
+
 
 class ApiRpcParam:
     def __init__(self, contents: Dict, others: Sequence[ApiType]) -> None:
         self.name: str = contents["name"]
         unresolved_type_name = contents["type"]
-        
+
         if unresolved_type_name in _builtin_types:
             self.type = _builtin_types[unresolved_type_name]
         else:
@@ -100,7 +114,7 @@ class ApiRpc:
     def __init__(self, contents: Dict, others: Sequence[ApiType]) -> None:
         self.name = contents["name"]
         self.params = [ApiRpcParam(x, others) for x in contents["params"]]
-        self.return_type: str = contents["return_type"]
+        self.return_type: ApiType = _get_api_type(contents["return_type"], others)
         self.const: bool = contents["const"]
 
 
@@ -135,25 +149,6 @@ class InputYamlCollection:
         self.structs = []
         for x in unresolved_structs:
             self.structs.append(ApiStruct(x, self.enums + self.structs))
-        
+
         # Rpcs can depends on structs or enums, but not other RPCs
-        self.all_devices = [ApiDevice(x, self.enums + self.structs) for x in itertools.chain(*(x.devices for x in input_items))]
-        
-
-def generate_api(inputs: List[str]):
-    all_inputs = InputYamlCollection(inputs)
-    
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output_folder", action="store")
-    parser.add_argument("--input_yamls", action="store", nargs="+")
-
-    args = parser.parse_args()
-
-    generate_api(args.input_yamls)
-
-
-if __name__ == "__main__":
-    main()
+        self.devices = [ApiDevice(x, self.enums + self.structs) for x in itertools.chain(*(x.devices for x in input_items))]

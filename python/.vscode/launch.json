@@ -15,9 +15,9 @@
             "name": "Generate",
             "type": "debugpy",
             "request": "launch",
-            "program": "rpc_lite/generate_api.py",
+            "cwd": "${workspaceFolder}/test",
+            "program": "test.py",
             "console": "integratedTerminal",
-            "args": ["--input_yamls", "example/api.yaml", "--output_folder", "example/output"]
         },
         {
             "name": "echo",
