@@ -7,12 +7,9 @@ import jinja2
 
 from rpclite.input_parser import InputYamlCollection
 
-
-def generate(output_folder: str, input_yamls: List[str]):
+def generate(input_yaml_file: str, output_folder: str):
     
-    all_inputs = InputYamlCollection(input_yamls)
-
-    # Define the output directory
+    all_inputs = InputYamlCollection([input_yaml_file])
 
     # Ensure the output directory exists
     os.makedirs(output_folder, exist_ok=True)
@@ -26,18 +23,29 @@ def generate(output_folder: str, input_yamls: List[str]):
     )
 
     # Load templates
-    models_template = env.get_template('python_module.jinja2')
+    py_client_template = env.get_template('python_client.jinja2')
+    py_server_template = env.get_template('python_server.jinja2')
+    py_types_template = env.get_template('python_types.jinja2')
     
     data = {
+        "api_name": all_inputs.get_api_name(),
         "enums": all_inputs.enums,
         "structs": all_inputs.structs,
         "devices": all_inputs.devices
     }
 
-    # Render models.py
-    models_content = models_template.render(data)
-    with open(os.path.join(output_folder, 'models.py'), 'w') as f:
-        f.write(models_content)
+    # Render
+    py_client_content = py_client_template.render(data)
+    with open(os.path.join(output_folder, f'{all_inputs.get_api_name()}_client.py'), 'w') as f:
+        f.write(py_client_content)
+    
+    py_server_content = py_server_template.render(data)
+    with open(os.path.join(output_folder, f'{all_inputs.get_api_name()}_server.py'), 'w') as f:
+        f.write(py_server_content)
+        
+    py_types_content = py_types_template.render(data)
+    with open(os.path.join(output_folder, f'{all_inputs.get_api_name()}_types.py'), 'w') as f:
+        f.write(py_types_content)
 
     print(f"Python project generated successfully in '{output_folder}/' directory.")
 

@@ -1,3 +1,5 @@
+api:
+  name: test_api
 enums:
   - name: PowerState
     entries:

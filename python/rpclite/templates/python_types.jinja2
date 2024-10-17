@@ -1,8 +1,6 @@
 # Generated Python Script
 import enum
 from dataclasses import dataclass
-import abc
-from rpclite.rpc_comms import RpcComms
 
 {% for e in enums %}
 class {{e.get_name()}}(enum.IntEnum):
@@ -16,17 +14,5 @@ class {{e.get_name()}}(enum.IntEnum):
 class {{s.get_name()}}:
     {% for entry in s.fields%}
     {{entry.name}}: {{entry.type.get_name()}}
-    {% endfor %}
-{% endfor %}
-
-{% for d in devices %}
-class {{d.name}}(abc.ABC):
-    def __init__(self, comms: RpcComms):
-        self._comms = comms
-
-    {% for rpc in d.rpcs%}
-    def {{rpc.name}}(self) -> {{rpc.return_type.get_name()}}:
-        pass
-
     {% endfor %}
 {% endfor %}

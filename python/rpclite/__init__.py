@@ -1,1 +1,1 @@
-from generate_api import generate
+from rpclite.generate_api import generate

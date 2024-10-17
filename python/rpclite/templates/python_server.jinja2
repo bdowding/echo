@@ -1,0 +1,29 @@
+# Generated Python Script
+import enum
+from dataclasses import dataclass
+import struct
+import abc
+from rpclite.rpc_comms import RpcServerComms
+from rpclite.rpc_marshal import args_to_type
+import {{api_name}}_types
+
+{%macro params(rpc, types)%}
+{%for p in rpc.params%}, {{p.name}}{%if types%}: {{p.type.get_name()}}{%endif%}{%endfor%}
+{%endmacro%}
+
+{%macro struct_code(rpc)%}
+{%for p in rpc.params%}{{p.type.get_struct_code()}}{%endfor%}
+{%endmacro%}
+
+{% for d in devices %}
+class {{d.name}}Device(abc.ABC):
+    def __init__(self, comms: RpcServerComms, base_index: int = 0):
+        self._comms = comms
+        self._base_index = base_index
+
+    {% for rpc in d.rpcs%}
+    def {{rpc.name}}(self{{params(rpc, True)}}) -> {{rpc.return_type.get_name()}}:
+        pass
+    
+    {% endfor %}
+{% endfor %}
