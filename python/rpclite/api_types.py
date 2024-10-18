@@ -1,4 +1,5 @@
 
+import abc
 from typing import Dict, List, Sequence, Tuple, Type
 
 from rpclite.exceptions import MultipleMatchException, NoMatchException
@@ -20,8 +21,13 @@ _builtin_types: Dict[str, Tuple[type, str]] = {
 }
 
 
-class ApiType:
+class ApiType(abc.ABC):
+    @abc.abstractmethod
     def get_name(self, none_type: bool = False) -> str: ...
+    @abc.abstractmethod
+    def is_primitive(self) -> bool: ...
+    @abc.abstractmethod
+    def get_struct_code(self) -> str: ...
 
 
 class ApiPrimitive(ApiType):
@@ -40,6 +46,9 @@ class ApiPrimitive(ApiType):
         
     def get_struct_code(self) -> str:
         return self._struct_code
+
+    def is_primitive(self) -> bool:
+        return True
 
 
 def _get_api_type(type_name: str, others: Sequence[ApiType]):
@@ -68,7 +77,12 @@ class ApiEnum(ApiType):
 
     def get_name(self, none_type: bool = False) -> str:
         return self.name
-
+    
+    def is_primitive(self) -> bool:
+        return False
+    
+    def get_struct_code(self) -> str:
+        return "B"
 
 class ApiStructField:
     def __init__(self, name: str, api_type: ApiType) -> None:
@@ -80,6 +94,7 @@ class ApiStruct(ApiType):
     def __init__(self, contents: Dict, others: Sequence[ApiType]):
         self.name = contents["name"]
         self.fields: List[ApiStructField] = []
+        self.struct_code = ""
 
         for unresolved in contents["fields"]:
             target_type_name: str = unresolved["type"]
@@ -87,3 +102,10 @@ class ApiStruct(ApiType):
 
     def get_name(self, none_type: bool = False) -> str:
         return self.name
+
+    def is_primitive(self) -> bool:
+        return False
+    
+    def get_struct_code(self) -> str:
+        return self.struct_code
+    

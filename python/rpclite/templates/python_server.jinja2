@@ -3,16 +3,24 @@ import enum
 from dataclasses import dataclass
 import struct
 import abc
-from rpclite.rpc_comms import RpcServerComms
+from rpclite.rpc_comms import RpcInfo, RpcServerComms
 from rpclite.rpc_marshal import args_to_type
-import {{api_name}}_types
+
+{%if enums%}
+from .{{package_name}}_types import {%for e in enums%}{{e.get_name()}}{%endfor%}
+{%endif%}
+
+{%if structs%}
+from .{{package_name}}_types import {%for s in structs%}{{s.get_name()}}{%endfor%}
+{%endif%}
+
 
 {%macro params(rpc, types)%}
 {%for p in rpc.params%}, {{p.name}}{%if types%}: {{p.type.get_name()}}{%endif%}{%endfor%}
 {%endmacro%}
 
-{%macro struct_code(rpc)%}
-{%for p in rpc.params%}{{p.type.get_struct_code()}}{%endfor%}
+{%macro struct_code(params)%}
+{%for p in params%}{{p.type.get_struct_code()}}{%endfor%}
 {%endmacro%}
 
 {% for d in devices %}
@@ -20,8 +28,12 @@ class {{d.name}}Device(abc.ABC):
     def __init__(self, comms: RpcServerComms, base_index: int = 0):
         self._comms = comms
         self._base_index = base_index
+        {% for rpc in d.rpcs%}
+        self._comms.register_rpc({{loop.index0}}, RpcInfo(self.{{rpc.name}}, "{{struct_code(rpc.params)}}", "{{rpc.return_type.get_struct_code()}}"))
+        {% endfor %}
 
     {% for rpc in d.rpcs%}
+    @abc.abstractmethod
     def {{rpc.name}}(self{{params(rpc, True)}}) -> {{rpc.return_type.get_name()}}:
         pass
     

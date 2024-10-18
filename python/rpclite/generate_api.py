@@ -19,7 +19,7 @@ def generate(input_yaml_file: str, output_folder: str):
         loader=jinja2.PackageLoader('rpclite'),
         autoescape=jinja2.select_autoescape(['python']),
         trim_blocks=True,
-        lstrip_blocks=True
+        lstrip_blocks=True,
     )
 
     # Load templates
@@ -28,7 +28,7 @@ def generate(input_yaml_file: str, output_folder: str):
     py_types_template = env.get_template('python_types.jinja2')
     
     data = {
-        "api_name": all_inputs.get_api_name(),
+        "package_name": f"{all_inputs.get_api_name()}",
         "enums": all_inputs.enums,
         "structs": all_inputs.structs,
         "devices": all_inputs.devices
