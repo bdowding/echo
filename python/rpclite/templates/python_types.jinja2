@@ -1,18 +1,20 @@
 # Generated Python Script
 import enum
-from dataclasses import dataclass
+import dataclasses
 
 {% for e in enums %}
 class {{e.get_name()}}(enum.IntEnum):
     {% for entry in e.entries%}
     {{entry.name}} = {{entry.value}}
     {% endfor %}
+
 {% endfor %}
 
 {% for s in structs %}
-@dataclass
+@dataclasses.dataclass
 class {{s.get_name()}}:
     {% for entry in s.fields%}
     {{entry.name}}: {{entry.type.get_name()}}
     {% endfor %}
+
 {% endfor %}

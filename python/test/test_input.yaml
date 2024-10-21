@@ -8,6 +8,12 @@ enums:
     - name: PoweredOn
       value: 1
 structs:
+    - name: WidgetInfo
+      fields:
+        - name: size
+          type: float
+        - name: manufacturer
+          type: uint8_t
     - name: EchoSensorStatus
       fields:
         - name: state
@@ -15,6 +21,8 @@ structs:
         - name: distance
           comment: Distance in mm
           type: float
+        - name: info
+          type: WidgetInfo
 devices:
   - name: EchoSensor
     rpcs:

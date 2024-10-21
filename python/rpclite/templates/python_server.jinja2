@@ -1,17 +1,16 @@
 # Generated Python Script
 import enum
-from dataclasses import dataclass
 import struct
 import abc
 from rpclite.rpc_comms import RpcInfo, RpcServerComms
-from rpclite.rpc_marshal import args_to_type
+import rpclite.rpc_marshal
 
 {%if enums%}
-from .{{package_name}}_types import {%for e in enums%}{{e.get_name()}}{%endfor%}
+from .api_types import {%for e in enums%}{{e.get_name()}}{%if not loop.last%}, {%endif%}{%endfor%}
 {%endif%}
 
 {%if structs%}
-from .{{package_name}}_types import {%for s in structs%}{{s.get_name()}}{%endfor%}
+from .api_types import {%for s in structs%}{{s.get_name()}}{%if not loop.last%}, {%endif%}{%endfor%}
 {%endif%}
 
 
@@ -19,8 +18,8 @@ from .{{package_name}}_types import {%for s in structs%}{{s.get_name()}}{%endfor
 {%for p in rpc.params%}, {{p.name}}{%if types%}: {{p.type.get_name()}}{%endif%}{%endfor%}
 {%endmacro%}
 
-{%macro struct_code(params)%}
-{%for p in params%}{{p.type.get_struct_code()}}{%endfor%}
+{%macro rpc_params_converters(params)%}
+{%for p in params%}bytes_to_{{p.type.get_name()}}{%if not loop.last%}, {%endif%}{%endfor%}
 {%endmacro%}
 
 {% for d in devices %}
@@ -29,7 +28,7 @@ class {{d.name}}Device(abc.ABC):
         self._comms = comms
         self._base_index = base_index
         {% for rpc in d.rpcs%}
-        self._comms.register_rpc({{loop.index0}}, RpcInfo(self.{{rpc.name}}, "{{struct_code(rpc.params)}}", "{{rpc.return_type.get_struct_code()}}"))
+        self._comms.register_rpc({{loop.index0}}, RpcInfo(self.{{rpc.name}}, [{{rpc_params_converters(rpc.params)}}], "{{rpc.return_type.get_struct_code()}}"))
         {% endfor %}
 
     {% for rpc in d.rpcs%}

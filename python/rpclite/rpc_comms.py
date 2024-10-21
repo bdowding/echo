@@ -2,10 +2,7 @@
 import abc
 from dataclasses import dataclass
 import struct
-from typing import Any, Callable, Dict, TypeVar
-
-
-T = TypeVar("T")
+from typing import Any, Callable, Dict
 
 
 class ClientTransportLayer(abc.ABC):
@@ -31,9 +28,9 @@ class RpcClientComms:
 
 @dataclass
 class RpcInfo:
-    callback: Callable
-    params_code: str
-    return_code: str
+    callback: Callable[..., Any]
+    bytes_to_params: Callable[[bytes], Any]
+    return_type_to_bytes: Callable[[Any], bytes]
 
 
 class RpcServerComms:
@@ -43,14 +40,10 @@ class RpcServerComms:
     def on_incoming_message(self, incoming: bytes) -> bytes:
         rpc_index = struct.unpack_from(">H", incoming)[0]
         rpc_info = self._rpcs[rpc_index]
-        params = struct.unpack_from(rpc_info.params_code, incoming, 2)
+        params = rpc_info.bytes_to_params(incoming[2:])
         response_object = rpc_info.callback(*params)
-
-        if response_object is None and rpc_info.return_code == "":
-            return b'\0'
-        else:
-            response_bytes = struct.pack(rpc_info.return_code, response_object)
-            return b'\0' + response_bytes
+        response_bytes = rpc_info.return_type_to_bytes(response_object)
+        return b'\0' + response_bytes
 
     def register_rpc(self, rpc_index: int, rpc_info: RpcInfo):
         self._rpcs[rpc_index] = rpc_info

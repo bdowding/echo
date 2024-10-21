@@ -1,12 +1,10 @@
-import output.test_api_types
+
 import rpclite
 import rpclite.rpc_comms
 
 rpclite.generate("test_input.yaml", "output")
 
-import output.test_api_client
-import output.test_api_server
-
+import output
 
 class DirectClient(rpclite.rpc_comms.ClientTransportLayer):
     def __init__(self, server: rpclite.rpc_comms.RpcServerComms) -> None:
@@ -17,7 +15,7 @@ class DirectClient(rpclite.rpc_comms.ClientTransportLayer):
         return self._server.on_incoming_message(outgoing_bytes)
 
 
-class DummyEchoSensorDevice(output.test_api_server.EchoSensorDevice):
+class DummyEchoSensorDevice(output.server.EchoSensorDevice):
     def __init__(self, comms: rpclite.rpc_comms.RpcServerComms):
         super().__init__(comms)
         self._power = False
@@ -28,10 +26,11 @@ class DummyEchoSensorDevice(output.test_api_server.EchoSensorDevice):
     def setPowerEnabled(self, power: bool) -> None:
         self._power = power
 
-    def getStatus(self) -> output.test_api_client.EchoSensorStatus:
-        return output.test_api_client.EchoSensorStatus(
-            output.test_api_types.PowerState.PoweredOff,
-            1.234
+    def getStatus(self) -> output.api_types.EchoSensorStatus:
+        return output.api_types.EchoSensorStatus(
+            output.api_types.PowerState.PoweredOff,
+            1.234, 
+            output.api_types.WidgetInfo(1.1, 2)
         )
 
 
@@ -42,7 +41,7 @@ def main():
     client_transport = DirectClient(server_comms)
     client_comms = rpclite.rpc_comms.RpcClientComms(client_transport)
 
-    client_api = output.test_api_client.EchoSensor(client_comms)
+    client_api = output.client.EchoSensor(client_comms)
     device = DummyEchoSensorDevice(server_comms)
     
     power = client_api.isPowerEnabled()
@@ -50,6 +49,8 @@ def main():
     client_api.setPowerEnabled(True)
     power = client_api.isPowerEnabled()
     print(f"Power: {power}")
+    status = client_api.getStatus()
+    print(status)
 
 
 if __name__ == "__main__":

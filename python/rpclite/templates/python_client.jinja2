@@ -1,15 +1,14 @@
 # Generated Python Script
 import enum
-from dataclasses import dataclass
 import struct
 from rpclite.rpc_comms import RpcClientComms
-from rpclite.rpc_marshal import args_to_type
+import rpclite.rpc_marshal
 {%if enums%}
-from .{{package_name}}_types import {%for e in enums%}{{e.get_name()}}{%endfor%}
+from .api_types import {%for e in enums%}{{e.get_name()}}{%if not loop.last%}, {%endif%}{%endfor%}
 {%endif%}
 
 {%if structs%}
-from .{{package_name}}_types import {%for s in structs%}{{s.get_name()}}{%endfor%}
+from .api_types import {%for s in structs%}{{s.get_name()}}{%if not loop.last%}, {%endif%}{%endfor%}
 {%endif%}
 
 {%macro params(rpc, types)%}
@@ -30,8 +29,8 @@ class {{d.name}}:
     def {{rpc.name}}(self{{params(rpc, True)}}) -> {{rpc.return_type.get_name()}}:
         param_bytes = struct.pack("{%for p in rpc.params%}{{p.type.get_struct_code()}}{%endfor%}"{{params(rpc, False)}})
         response_bytes = self._comms.invoke_rpc(self._base_index + {{ loop.index0 }}, param_bytes)
-        response_args = struct.unpack("{{rpc.return_type.get_struct_code()}}", response_bytes)
-        return args_to_type({{rpc.return_type.get_name(True)}}, response_args)
+        response = rpclite.rpc_marshal.bytes_to_{{rpc.return_type.get_name()}}(response_bytes)
+        return response
     
     {% endfor %}
 {% endfor %}
